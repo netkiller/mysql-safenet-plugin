@@ -10,11 +10,16 @@ Installation Plugin
     make insall
     
     cp /srv/mysql/lib/plugin/safenet.* /usr/lib/mysql/plugin/
+
+
+	export SAFENET_URL=http://202.176.141.10/safe/interface
+	export SAFENET_KEY=Web01-key	
     
 Create Function
 ---------------------
     create function safenet_encrypt returns string soname 'safenet.so';
     create function safenet_decrypt returns string soname 'safenet.so';
+	create function safenet_config returns string soname 'safenet.so';
 
 Example
 -------
@@ -34,8 +39,10 @@ Example
     +---------------------------------------------------+
     1 row in set (0.31 sec)
 
+	mysql> select safenet_config();
 
 Drop Function
 -------------
     drop function safenet_encrypt;
     drop function safenet_decrypt;
+	drop function safenet_config;

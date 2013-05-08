@@ -2,18 +2,29 @@
 #include <string.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <curl/curl.h>
 #include "safenet.h"
 
-#define SAFENET_URL "http://175.145.204.105:8080/safe/interface" 
+#define SAFENET_URL "http://localhost/safe/interface" 
+#define SAFENET_KEY "Web01-key" 
 
-my_bool safenet_encrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message);
-char *safenet_encrypt(UDF_INIT *initid, UDF_ARGS *args, char *result, unsigned long *length, char *is_null, char *error);
-void safenet_encrypt_deinit(UDF_INIT *initid);
+char *safe_url;
+char *safe_key;
 
-my_bool safenet_decrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message);
-char *safenet_decrypt(UDF_INIT *initid, UDF_ARGS *args, char *result, unsigned long *length, char *is_null, char *error);
-void safenet_decrypt_deinit(UDF_INIT *initid);
+
+void get_safenet_env(){
+    if (getenv("SAFENET_URL")){
+	safe_url = getenv("SAFENET_URL");
+    }else{
+	safe_url = SAFENET_URL;
+    }
+    if (getenv("SAFENET_KEY")){
+	safe_key = getenv("SAFENET_KEY");
+    }else{
+	safe_key = SAFENET_KEY;
+    }
+}
 
 static void *myrealloc(void *ptr, size_t size)
 {
@@ -55,7 +66,7 @@ my_bool safenet_encrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
             MYSQL_ERRMSG_SIZE);
     return 1;
   }
-
+  get_safenet_env(); 
   args->arg_type[0]= STRING_RESULT;
 
   initid->max_length= CURL_UDF_MAX_SIZE;
@@ -72,11 +83,13 @@ char *safenet_encrypt(UDF_INIT *initid, UDF_ARGS *args,
                 __attribute__ ((unused)) char *is_null,
                 __attribute__ ((unused)) char *error)
 {
+
   CURLcode retref;
   CURL *curl;
 
-  char fields[1024];
-  sprintf(fields, "mode=encrypt&keyname=Web01-key&input=%s", args->args[0]);
+  char *fields;
+  asprintf(&fields, "mode=encrypt&keyname=%s&input=%s", safe_key, args->args[0]);
+
   st_curl_results *res= (st_curl_results *)initid->ptr;
 
   curl_global_init(CURL_GLOBAL_ALL);
@@ -91,7 +104,7 @@ char *safenet_encrypt(UDF_INIT *initid, UDF_ARGS *args,
     chunk = curl_slist_append(chunk, "Expect:");  
   
     //curl_easy_setopt(curl, CURLOPT_URL, args->args[0]);
-    curl_easy_setopt(curl, CURLOPT_URL, SAFENET_URL);
+    curl_easy_setopt(curl, CURLOPT_URL, safe_url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, result_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)res);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "safenet/1.0 by netkiller <netkiller@msn.com>");
@@ -139,6 +152,8 @@ my_bool safenet_decrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
     return 1;
   }
 
+  get_safenet_env();
+
   args->arg_type[0]= STRING_RESULT;
 
   initid->max_length= CURL_UDF_MAX_SIZE;
@@ -155,11 +170,12 @@ char *safenet_decrypt(UDF_INIT *initid, UDF_ARGS *args,
                 __attribute__ ((unused)) char *is_null,
                 __attribute__ ((unused)) char *error)
 {
+
   CURLcode retref;
   CURL *curl;
 
-  char fields[1024];
-  sprintf(fields, "mode=decrypt&keyname=Web01-key&input=%s", args->args[0]);
+  char *fields;
+  asprintf(&fields, "mode=decrypt&keyname=%s&input=%s", safe_key, args->args[0]);
   st_curl_results *res= (st_curl_results *)initid->ptr;
 
   curl_global_init(CURL_GLOBAL_ALL);
@@ -174,7 +190,7 @@ char *safenet_decrypt(UDF_INIT *initid, UDF_ARGS *args,
     chunk = curl_slist_append(chunk, "Expect:");  
   
     //curl_easy_setopt(curl, CURLOPT_URL, args->args[0]);
-    curl_easy_setopt(curl, CURLOPT_URL, SAFENET_URL);
+    curl_easy_setopt(curl, CURLOPT_URL, safe_url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, result_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)res);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "safenet/1.0 by netkiller <netkiller@msn.com>");
@@ -205,4 +221,30 @@ void safenet_decrypt_deinit(UDF_INIT *initid)
   free(res->result);
   free(res);
   return;
+}
+
+/* ------------------------ safenet config ----------------------------- */
+
+my_bool safenet_config_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
+{
+
+    get_safenet_env();
+    return 0;
+}
+
+char *safenet_config(UDF_INIT *initid, UDF_ARGS *args,
+                __attribute__ ((unused)) char *result,
+               unsigned long *length,
+                __attribute__ ((unused)) char *is_null,
+                __attribute__ ((unused)) char *error)
+{
+
+  char *config;
+  asprintf(&config, "SAFENET_URL=%s, SAFENET_KEY=%s", safe_url, safe_key);
+  return ((char *)config);
+}
+
+void safenet_config_deinit(UDF_INIT *initid)
+{
+   return;
 }
