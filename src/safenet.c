@@ -1,3 +1,8 @@
+/*
+Homepage: http://netkiller.github.io/
+Author: netkiller<netkiller@msn.com>
+*/
+
 #include <mysql.h>
 #include <string.h>
 
@@ -26,39 +31,88 @@ void get_safenet_env(){
     }
 }
 
-static void *myrealloc(void *ptr, size_t size)
-{
-  /* There might be a realloc() out there that doesn't like reallocing
-     NULL pointers, so we take care of it here */
-  if (ptr)
-    return realloc(ptr, size);
-  else
-    return malloc(size);
-}
+/* CURL FUNCTION BEGIN*/
+struct string {
+  char *ptr;
+  size_t len;
+};
 
-static size_t
-result_cb(void *ptr, size_t size, size_t nmemb, void *data)
-{
-  size_t realsize= size * nmemb;
-  struct st_curl_results *res= (struct st_curl_results *)data;
-
-  res->result= (char *)myrealloc(res->result, res->size + realsize + 1);
-  if (res->result)
-  {
-    memcpy(&(res->result[res->size]), ptr, realsize);
-    res->size += realsize;
-    res->result[res->size]= 0;
+void init_string(struct string *s) {
+  s->len = 0;
+  s->ptr = malloc(s->len+1);
+  if (s->ptr == NULL) {
+    fprintf(stderr, "malloc() failed\n");
+    exit(EXIT_FAILURE);
   }
-  return realsize;
+  s->ptr[0] = '\0';
 }
+
+size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
+{
+  size_t new_len = s->len + size*nmemb;
+  s->ptr = realloc(s->ptr, new_len+1);
+  if (s->ptr == NULL) {
+    fprintf(stderr, "realloc() failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memcpy(s->ptr+s->len, ptr, size*nmemb);
+  s->ptr[new_len] = '\0';
+  s->len = new_len;
+
+  return size*nmemb;
+}
+
+char * safenet(char *url, char *mode, char *key, char *in )
+{ 
+    CURL *curl;
+    CURLcode res;
+    char *fields;
+    char *data;
+
+//  curl_global_init(CURL_GLOBAL_ALL);
+ 
+    /* get a curl handle */ 
+    curl = curl_easy_init();
+    if(curl) {
+        struct string s;
+        init_string(&s); 
+        
+        asprintf(&fields, "mode=%s&keyname=%s&input=%s", mode, key, in);    
+    
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "safenet/1.0 by netkiller <netkiller@msn.com>");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, fields);
+     
+        /* Perform the request, res will get the return code */ 
+        res = curl_easy_perform(curl);
+        /* Check for errors */ 
+        if(res != CURLE_OK)
+          fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                  curl_easy_strerror(res));
+     
+        asprintf(&data, "%s", s.ptr);
+        //printf("Encrypt: %s\n", data);
+    
+        free(s.ptr);
+        /* always cleanup */ 
+        curl_easy_cleanup(curl);
+    }
+    else{
+	strcpy(data,"");
+    }
+
+    return data;
+  //curl_global_cleanup();
+}
+/* CURL FUNCTION END*/
 
 /* ------------------------ safenet encrypt ----------------------------- */
 
 my_bool safenet_encrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
 {
-  st_curl_results *container;
 
-  //if (args->arg_count != 2)
   if (args->arg_count != 1)
   {
     strncpy(message,
@@ -68,11 +122,6 @@ my_bool safenet_encrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
   }
   get_safenet_env(); 
   args->arg_type[0]= STRING_RESULT;
-
-  initid->max_length= CURL_UDF_MAX_SIZE;
-  container= (st_curl_results *)malloc(sizeof(st_curl_results));
-
-  initid->ptr= (char *)container;
 
   return 0;
 }
@@ -84,56 +133,15 @@ char *safenet_encrypt(UDF_INIT *initid, UDF_ARGS *args,
                 __attribute__ ((unused)) char *error)
 {
 
-  CURLcode retref;
-  CURL *curl;
+    char *data;
+    data = safenet(safe_url, "encrypt", safe_key, args->args[0]);
+    *length = strlen(data);
+    return ((char *)data);
 
-  char *fields;
-  asprintf(&fields, "mode=encrypt&keyname=%s&input=%s", safe_key, args->args[0]);
-
-  st_curl_results *res= (st_curl_results *)initid->ptr;
-
-  curl_global_init(CURL_GLOBAL_ALL);
-  curl= curl_easy_init();
-
-  res->result= NULL;
-  res->size= 0;
-
-  if (curl)
-  {
-    struct curl_slist *chunk = NULL;
-    chunk = curl_slist_append(chunk, "Expect:");  
-  
-    //curl_easy_setopt(curl, CURLOPT_URL, args->args[0]);
-    curl_easy_setopt(curl, CURLOPT_URL, safe_url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, result_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)res);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "safenet/1.0 by netkiller <netkiller@msn.com>");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, fields);
-    retref= curl_easy_perform(curl);
-    if (retref) {
-      fprintf(stderr, "error\n");
-      strcpy(res->result,"");
-      *length= 0;
-    }
-  }
-  else
-  {
-    strcpy(res->result,"");
-    *length= 0;
-  }
-  curl_easy_cleanup(curl);
-  *length= res->size;
-  return ((char *) res->result);
 }
 
 void safenet_encrypt_deinit(UDF_INIT *initid)
 {
-  /* if we allocated initid->ptr, free it here */
-  st_curl_results *res= (st_curl_results *)initid->ptr;
-
-  free(res->result);
-  free(res);
   return;
 }
 
@@ -141,9 +149,7 @@ void safenet_encrypt_deinit(UDF_INIT *initid)
 
 my_bool safenet_decrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
 {
-  st_curl_results *container;
 
-  //if (args->arg_count != 2)
   if (args->arg_count != 1)
   {
     strncpy(message,
@@ -153,13 +159,7 @@ my_bool safenet_decrypt_init(UDF_INIT *initid, UDF_ARGS *args, char *message)
   }
 
   get_safenet_env();
-
   args->arg_type[0]= STRING_RESULT;
-
-  initid->max_length= CURL_UDF_MAX_SIZE;
-  container= (st_curl_results *)malloc(sizeof(st_curl_results));
-
-  initid->ptr= (char *)container;
 
   return 0;
 }
@@ -171,55 +171,15 @@ char *safenet_decrypt(UDF_INIT *initid, UDF_ARGS *args,
                 __attribute__ ((unused)) char *error)
 {
 
-  CURLcode retref;
-  CURL *curl;
+    char *data;
+    data = safenet(safe_url, "decrypt", safe_key, args->args[0]);
+    *length = strlen(data);
+    return ((char *)data);
 
-  char *fields;
-  asprintf(&fields, "mode=decrypt&keyname=%s&input=%s", safe_key, args->args[0]);
-  st_curl_results *res= (st_curl_results *)initid->ptr;
-
-  curl_global_init(CURL_GLOBAL_ALL);
-  curl= curl_easy_init();
-
-  res->result= NULL;
-  res->size= 0;
-
-  if (curl)
-  {
-    struct curl_slist *chunk = NULL;
-    chunk = curl_slist_append(chunk, "Expect:");  
-  
-    //curl_easy_setopt(curl, CURLOPT_URL, args->args[0]);
-    curl_easy_setopt(curl, CURLOPT_URL, safe_url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, result_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)res);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "safenet/1.0 by netkiller <netkiller@msn.com>");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, fields);
-    retref= curl_easy_perform(curl);
-    if (retref) {
-      fprintf(stderr, "error\n");
-      strcpy(res->result,"");
-      *length= 0;
-    }
-  }
-  else
-  {
-    strcpy(res->result,"");
-    *length= 0;
-  }
-  curl_easy_cleanup(curl);
-  *length= res->size;
-  return ((char *) res->result);
 }
 
 void safenet_decrypt_deinit(UDF_INIT *initid)
 {
-  /* if we allocated initid->ptr, free it here */
-  st_curl_results *res= (st_curl_results *)initid->ptr;
-
-  free(res->result);
-  free(res);
   return;
 }
 
@@ -241,6 +201,7 @@ char *safenet_config(UDF_INIT *initid, UDF_ARGS *args,
 
   char *config;
   asprintf(&config, "SAFENET_URL=%s, SAFENET_KEY=%s", safe_url, safe_key);
+  *length = strlen(config);
   return ((char *)config);
 }
 
