@@ -1,7 +1,7 @@
 safenet-mysql
 =============
 
-SafeNet for MySQL
+SafeNet for MySQL - http://www.safenet-inc.com/
 
 Installation Plugin
 ------------
