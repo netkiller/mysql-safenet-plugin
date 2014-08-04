@@ -14,14 +14,21 @@ Installation Plugin
     cp /srv/mysql/lib/plugin/safenet.* /usr/lib/mysql/plugin/
 
 
-	export SAFENET_URL=http://202.176.141.10/safe/interface
-	export SAFENET_KEY=Web01-key	
-    
+	  export SAFENET_URL=http://202.176.141.10/safe/interface
+	  export SAFENET_KEY=Web01-key
+
+You also can use cmake to compile.
+---------------------------------
+    cd src
+    cmake .
+    make 
+    make install
+
 Create Function
 ---------------------
     create function safenet_encrypt returns string soname 'safenet.so';
     create function safenet_decrypt returns string soname 'safenet.so';
-	create function safenet_config returns string soname 'safenet.so';
+  	create function safenet_config returns string soname 'safenet.so';
 
 Example
 -------
