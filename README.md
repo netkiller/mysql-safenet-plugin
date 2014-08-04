@@ -5,6 +5,8 @@ SafeNet for MySQL - http://www.safenet-inc.com/
 
 Installation Plugin
 ------------
+	# yum install -y libcurl-devel
+
     ./configure --prefix=/srv/mysql --libdir=/srv/mysql/lib/plugin --with-mysql=/usr/bin/mysql_config
     make
     make insall
