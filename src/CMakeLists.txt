@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+PROJECT(safenet)
+ADD_LIBRARY(safenet SHARED safenet.c)
+INCLUDE_DIRECTORIES(/usr/include/mysql)
+TARGET_LINK_LIBRARIES(safenet curl)
+INSTALL(PROGRAMS libsafenet.so DESTINATION /usr/lib/mysql/plugin/)
