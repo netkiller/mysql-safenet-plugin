@@ -10,9 +10,6 @@ Installation Plugin
     ./configure --prefix=/usr/lib64/mysql --libdir=/usr/lib64/mysql/plugin --with-mysql=/usr/bin/mysql_config
     make
     make insall
-    
-    cp /srv/mysql/lib/plugin/safenet.* /usr/lib/mysql/plugin/
-
 
 	export SAFENET_URL=http://202.176.141.10/safe/interface
 	export SAFENET_KEY=Web01-key
