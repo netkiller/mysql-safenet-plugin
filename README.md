@@ -7,15 +7,15 @@ Installation Plugin
 ------------
 	# yum install -y libcurl-devel
 
-    ./configure --prefix=/srv/mysql --libdir=/srv/mysql/lib/plugin --with-mysql=/usr/bin/mysql_config
+    ./configure --prefix=/usr/lib64/mysql --libdir=/usr/lib64/mysql/plugin --with-mysql=/usr/bin/mysql_config
     make
     make insall
     
     cp /srv/mysql/lib/plugin/safenet.* /usr/lib/mysql/plugin/
 
 
-	  export SAFENET_URL=http://202.176.141.10/safe/interface
-	  export SAFENET_KEY=Web01-key
+	export SAFENET_URL=http://202.176.141.10/safe/interface
+	export SAFENET_KEY=Web01-key
 
 You also can use cmake to compile.
 ---------------------------------
@@ -28,7 +28,7 @@ Create Function
 ---------------------
     create function safenet_encrypt returns string soname 'safenet.so';
     create function safenet_decrypt returns string soname 'safenet.so';
-  	create function safenet_config returns string soname 'safenet.so';
+    create function safenet_config returns string soname 'safenet.so';
 
 Example
 -------
