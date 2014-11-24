@@ -172,7 +172,11 @@ char *safenet_decrypt(UDF_INIT *initid, UDF_ARGS *args,
 {
 
     char *data;
-    data = safenet(safe_url, "decrypt", safe_key, args->args[0]);
+    if(strlen(args->args[0]) != 512){
+        data = args->args[0];
+    }else{
+        data = safenet(safe_url, "decrypt", safe_key, args->args[0]);
+    }
     *length = strlen(data);
     return ((char *)data);
 

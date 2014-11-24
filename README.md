@@ -21,11 +21,16 @@ You also can use cmake to compile.
     make 
     make install
 
+    cat > /etc/sysconfig/mysqld <<EOF
+    export SAFENET_URL=http://host.localdomain/safe/interface
+    export SAFENET_KEY=Web01-key
+    EOF
+
 Create Function
 ---------------------
-    create function safenet_encrypt returns string soname 'safenet.so';
-    create function safenet_decrypt returns string soname 'safenet.so';
-    create function safenet_config returns string soname 'safenet.so';
+    create function safenet_encrypt returns string soname 'libsafenet.so';
+    create function safenet_decrypt returns string soname 'libsafenet.so';
+    create function safenet_config returns string soname 'libsafenet.so';
 
 Example
 -------
@@ -51,4 +56,4 @@ Drop Function
 -------------
     drop function safenet_encrypt;
     drop function safenet_decrypt;
-	drop function safenet_config;
+    drop function safenet_config;
