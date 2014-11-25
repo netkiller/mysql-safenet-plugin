@@ -5,17 +5,8 @@ SafeNet for MySQL - http://www.safenet-inc.com/
 
 Installation Plugin
 ------------
-	# yum install -y libcurl-devel
+    yum install -y libcurl-devel
 
-    ./configure --prefix=/usr/lib64/mysql --libdir=/usr/lib64/mysql/plugin --with-mysql=/usr/bin/mysql_config
-    make
-    make insall
-
-	export SAFENET_URL=http://202.176.141.10/safe/interface
-	export SAFENET_KEY=Web01-key
-
-You also can use cmake to compile.
----------------------------------
     cd src
     cmake .
     make 
@@ -54,6 +45,27 @@ Example
 
 Drop Function
 -------------
+    drop function safenet_encrypt;
+    drop function safenet_decrypt;
+    drop function safenet_config;
+
+-----
+
+You also can use make to compile.
+---------------------------------
+    ./configure --prefix=/usr/lib64/mysql --libdir=/usr/lib64/mysql/plugin --with-mysql=/usr/bin/mysql_config
+    make
+    make insall
+
+    cat > /etc/sysconfig/mysqld <<EOF
+    export SAFENET_URL=http://host.localdomain/safe/interface
+    export SAFENET_KEY=Web01-key
+    EOF
+
+    create function safenet_encrypt returns string soname 'safenet.so';
+    create function safenet_decrypt returns string soname 'safenet.so';
+    create function safenet_config returns string soname 'safenet.so';
+
     drop function safenet_encrypt;
     drop function safenet_decrypt;
     drop function safenet_config;
