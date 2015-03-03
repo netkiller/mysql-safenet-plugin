@@ -69,3 +69,7 @@ You also can use make to compile.
     drop function safenet_encrypt;
     drop function safenet_decrypt;
     drop function safenet_config;
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/netkiller/mysql-safenet-plugin/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
